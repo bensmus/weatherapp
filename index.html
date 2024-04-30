@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Fetcher</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="weather_api.js" defer></script>
+</head>
+<body>
+    <section id="city-search" class="major-section">
+        <header class="major-header">City Search</header>
+        <label for="city">Enter City</label>
+        <input type="text" name="city" id="city-input" list="cities">
+        <datalist id="cities"></datalist>
+        <button id="city-search-button">Search</button>
+    </section>
+    <section id="city-results" class="major-section" hidden>
+        <header id="city-results-header" class="major-header">City results loading...</header>
+        <section>
+            <header class="minor-header">Weather</header>
+            <code id="weather-json">Loading...</code>
+        </section>
+        <section>
+            <header class="minor-header">Sunset and Sunrise</header>
+            <code id="sunset-json">Loading...</code>
+        </section>
+    </section>
+</body>
+</html>
