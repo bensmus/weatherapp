@@ -22,6 +22,8 @@ const cityResultsHeader = document.getElementById('city-results-header')
 const weatherHolder = document.getElementById('weather-json')
 const sunHolder = document.getElementById('sun-json')
 const cityList = document.getElementById('cities')
+const metricButton = document.getElementById('metric-button')
+const usButton = document.getElementById('us-button')
 
 const weatherapi = {
     baseUrl: 'api.weatherapi.com/v1',
@@ -36,6 +38,7 @@ let canFetchWeatherFlag = false; // Used to avoid 400 error (error when fetching
 let metricFlag = true; // Metric or US?
 
 cityInput.value = "" // Everything assumes this is true.
+metricButton.disabled = true
 
 function makeApiUrl(baseUrl, method, params) {
     // Construct the base URL with the API method
@@ -98,7 +101,8 @@ cityInput.addEventListener('input', async (ev) => {
     }
 })
 
-function makeUiData(location, current, sunTimes, metricFlag) {
+// Combine data from weatherapi and sunapi into one object.
+function combineUiData(location, current, sunTimes, metricFlag) {
     const common = {
         localtime: location['localtime'],
         condition_text: current['condition']['text'],
@@ -132,7 +136,7 @@ function setUi(uiData) {
 }
 
 // Reload weather results UI.
-citySearchButton.addEventListener('click', async (ev) => {
+async function reloadWeather() {
     const cityQuery = cityInput.value
     if (canFetchWeatherFlag) {
         // Show cityResults section:
@@ -159,11 +163,29 @@ citySearchButton.addEventListener('click', async (ev) => {
         const current = weatherJson['current']
 
         // Data that is displayed in the UI:
-        const uiData = makeUiData(location, current, sunTimes, metricFlag)
+        const uiData = combineUiData(location, current, sunTimes, metricFlag)
 
         // Set UI values to those in uiData:
         setUi(uiData)
     } else {
         cityInput.style.border = "2px dotted red"
     }
+}
+
+citySearchButton.addEventListener('click', async (ev) => {
+    await reloadWeather()
+})
+
+metricButton.addEventListener('click', async (ev) => {
+    metricFlag = !metricFlag
+    metricButton.disabled = true
+    usButton.disabled = false
+    await reloadWeather()
+})
+
+usButton.addEventListener('click', async (ev) => {
+    metricFlag = !metricFlag
+    usButton.disabled = true
+    metricButton.disabled = false
+    await reloadWeather()
 })
