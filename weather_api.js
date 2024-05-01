@@ -19,11 +19,12 @@ const cityResults = document.getElementById('city-results')
 const citySearchButton = document.getElementById('city-search-button')
 const cityInput = document.getElementById('city-input')
 const cityResultsHeader = document.getElementById('city-results-header')
-const dataHolder = document.getElementById('weather-json')
+const weatherHolder = document.getElementById('weather-json')
+const sunHolder = document.getElementById('sun-json')
 const cityList = document.getElementById('cities')
 
 const weatherapi = {
-    baseUrl: 'http://api.weatherapi.com/v1',
+    baseUrl: 'api.weatherapi.com/v1',
     key: '1bade1c92b76455c967183012242804'
 }
 
@@ -34,9 +35,9 @@ const sunapi = {
 let canFetchWeatherFlag = false; // Used to avoid 400 error (error when fetching weather if no search results).
 cityInput.value = "" // Everything assumes this is true.
 
-function apiUrl(baseUrl, method, params) {
+function makeApiUrl(baseUrl, method, params) {
     // Construct the base URL with the API method
-    let apiUrl = `${baseUrl}/${method}?`
+    let apiUrl = `http://${baseUrl}/${method}?`
   
     let param_i = 0;
     for (const param in params) {
@@ -52,7 +53,7 @@ function apiUrl(baseUrl, method, params) {
 
 // Fetch cities matching q.
 async function fetchSearch(q) {
-    const searchUrl = apiUrl(weatherapi.baseUrl, 'search.json', {q: q, key: weatherapi.key})
+    const searchUrl = makeApiUrl(weatherapi.baseUrl, 'search.json', {q: q, key: weatherapi.key})
     const response = await fetch(searchUrl);
     const json = await response.json()
     if (json.length > 0) {
@@ -66,52 +67,61 @@ async function fetchSearch(q) {
 
 // Fetch weather for city that matches q.
 async function fetchWeather(q) {
-    const currentWeatherUrl = apiUrl(weatherapi.baseUrl, 'current.json', {q: q, key: weatherapi.key});
+    const currentWeatherUrl = makeApiUrl(weatherapi.baseUrl, 'current.json', {q: q, key: weatherapi.key});
     const response = await fetch(currentWeatherUrl);
     const json = await response.json()
     return json
 }
 
-// Reload HTML datalist based on q using fetchSearch.
-async function updateSearch(q) {
-    if (q != '') { // Search must have a non-empty query.
+async function fetchSun(lat, lon, tz_id) {
+    // Parameter names are slightly different for sunapi. Sunapi requires no api key.
+    const sunUrl = makeApiUrl(sunapi.baseUrl, 'json', {lat: lat, lng: lon, tzid: tz_id})
+    const response = await fetch(sunUrl);
+    const json = await response.json()
+    return json
+}
+
+// Reload HTML datalist.
+cityInput.addEventListener('input', async (ev) => {
+    cityInput.style.border = ''
+    const cityQuery = cityInput.value
+    if (cityQuery != '') { // Search must have a non-empty query.
         cityList.innerHTML = ''
-        const cities = await fetchSearch(q)
+        const cities = await fetchSearch(cityQuery)
         for (const city of cities) {
             const option = document.createElement('option')
             option.value = city
             cityList.appendChild(option)
         }
     }
-}
+})
 
-// Reload weather results UI using fetchWeather.
-async function updateResults(q) {
+// Reload weather results UI.
+citySearchButton.addEventListener('click', async (ev) => {
+    const cityQuery = cityInput.value
     if (canFetchWeatherFlag) {
-        // Show cityResults section
+        // Show cityResults section:
         cityResults.hidden = false
 
-        // Fetch weather json 
-        const json = await fetchWeather(q)
-        dataHolder.textContent = JSON.stringify(json)
+        // Fetch weather json:
+        const weatherJson = await fetchWeather(cityQuery)
+        weatherHolder.textContent = JSON.stringify(weatherJson)
 
-        // Show city name
-        const cityName = json['location']['name']
-        const cityRegion = json['location']['region']
-        const cityCountry = json['location']['country']
+        // Show city name:
+        const location = weatherJson['location']
+        const cityName = location['name']
+        const cityRegion = location['region']
+        const cityCountry = location['country']
         cityResultsHeader.innerText = `City Results: ${cityName}, ${cityRegion}, ${cityCountry}`
+
+        // Get lat, lon, tz_id for sunapi:
+        const lat = location['lat']
+        const lon = location['lon']
+        const tz_id = location['tz_id']
+
+        const sunJson = await fetchSun(lat, lon, tz_id)
+        sunHolder.textContent = JSON.stringify(sunJson)
     } else {
         cityInput.style.border = "2px dotted red"
     }
-}
-
-citySearchButton.addEventListener('click', async (ev) => {
-    const cityQuery = cityInput.value
-    await updateResults(cityQuery)
-})
-
-cityInput.addEventListener('input', async (ev) => {
-    cityInput.style.border = ''
-    const cityQuery = cityInput.value
-    await updateSearch(cityQuery)
 })
