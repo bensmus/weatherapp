@@ -31,9 +31,8 @@ const sunapi = {
     baseUrl: 'api.sunrise-sunset.org'
 }
 
-// q = 'Paris' // q is location for some reason
-// method = 'current.json'
-// const url = weatherapiURL(baseUrl, method, key, q)
+let canFetchWeatherFlag = false; // Used to avoid 400 error (error when fetching weather if no search results).
+cityInput.value = "" // Everything assumes this is true.
 
 function apiUrl(baseUrl, method, params) {
     // Construct the base URL with the API method
@@ -51,14 +50,21 @@ function apiUrl(baseUrl, method, params) {
     return apiUrl
 }
 
+// Fetch cities matching q.
 async function fetchSearch(q) {
     const searchUrl = apiUrl(weatherapi.baseUrl, 'search.json', {q: q, key: weatherapi.key})
     const response = await fetch(searchUrl);
     const json = await response.json()
+    if (json.length > 0) {
+        canFetchWeatherFlag = true; // At least one city matches q.
+    } else {
+        canFetchWeatherFlag = false; // No cities match q.
+    }
     const cities = json.map(({name, region, country}) => `${name}, ${region}, ${country}`)
     return cities
 }
 
+// Fetch weather for city that matches q.
 async function fetchWeather(q) {
     const currentWeatherUrl = apiUrl(weatherapi.baseUrl, 'current.json', {q: q, key: weatherapi.key});
     const response = await fetch(currentWeatherUrl);
@@ -66,31 +72,9 @@ async function fetchWeather(q) {
     return json
 }
 
-async function updateResults(q) {
-    if (q != '') {
-        // Fetch weather json 
-        const json = await fetchWeather(q)
-
-        if (json['error']) {
-            // City was not found based on q
-            cityInput.style.border = "2px dotted red"
-            return
-        }
-
-        // Show cityResults section
-        cityResults.hidden = false
-        dataHolder.textContent = JSON.stringify(json)
-
-        // Show city name
-        const cityName = json['location']['name']
-        const cityRegion = json['location']['region']
-        const cityCountry = json['location']['country']
-        cityResultsHeader.innerText = `City Results: ${cityName}, ${cityRegion}, ${cityCountry}`
-    }
-}
-
+// Reload HTML datalist based on q using fetchSearch.
 async function updateSearch(q) {
-    if (q != '') {
+    if (q != '') { // Search must have a non-empty query.
         cityList.innerHTML = ''
         const cities = await fetchSearch(q)
         for (const city of cities) {
@@ -98,6 +82,26 @@ async function updateSearch(q) {
             option.value = city
             cityList.appendChild(option)
         }
+    }
+}
+
+// Reload weather results UI using fetchWeather.
+async function updateResults(q) {
+    if (canFetchWeatherFlag) {
+        // Show cityResults section
+        cityResults.hidden = false
+
+        // Fetch weather json 
+        const json = await fetchWeather(q)
+        dataHolder.textContent = JSON.stringify(json)
+
+        // Show city name
+        const cityName = json['location']['name']
+        const cityRegion = json['location']['region']
+        const cityCountry = json['location']['country']
+        cityResultsHeader.innerText = `City Results: ${cityName}, ${cityRegion}, ${cityCountry}`
+    } else {
+        cityInput.style.border = "2px dotted red"
     }
 }
 
