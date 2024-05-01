@@ -33,22 +33,27 @@ const sunapi = {
 
 // q = 'Paris' // q is location for some reason
 // method = 'current.json'
-// const url = makeUrl(baseUrl, method, key, q)
+// const url = weatherapiURL(baseUrl, method, key, q)
 
-function makeUrl(baseUrl, method, key, q, ...params) {
+function apiUrl(baseUrl, method, params) {
     // Construct the base URL with the API method
-    let apiUrl = `${baseUrl}/${method}?q=${q}&key=${key}`
+    let apiUrl = `${baseUrl}/${method}?`
   
-    // Add any additional parameters
-    if (params.length > 0) {
-        apiUrl += '&' + params.join('&') // Join elements of params array into single string.
+    let param_i = 0;
+    for (const param in params) {
+        const value = params[param]
+        if (param_i != 0) {
+            apiUrl += '&'
+        }
+        apiUrl += `${param}=${value}`
+        param_i++
     }
-  
+    console.log(apiUrl)
     return apiUrl
 }
 
 async function fetchSearch(q) {
-    const searchUrl = makeUrl(weatherapi.baseUrl, 'search.json', weatherapi.key, q)
+    const searchUrl = apiUrl(weatherapi.baseUrl, 'search.json', {q: q, key: weatherapi.key})
     const response = await fetch(searchUrl);
     const json = await response.json()
     console.log(json)
@@ -57,7 +62,7 @@ async function fetchSearch(q) {
 }
 
 async function fetchWeather(q) {
-    const currentWeatherUrl = makeUrl(weatherapi.baseUrl, 'current.json', weatherapi.key, q);
+    const currentWeatherUrl = apiUrl(weatherapi.baseUrl, 'current.json', {q: q, key: weatherapi.key});
     const response = await fetch(currentWeatherUrl);
     const json = await response.json()
     return json
