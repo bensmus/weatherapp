@@ -33,6 +33,8 @@ const sunapi = {
 }
 
 let canFetchWeatherFlag = false; // Used to avoid 400 error (error when fetching weather if no search results).
+let metricFlag = true; // Metric or US?
+
 cityInput.value = "" // Everything assumes this is true.
 
 function makeApiUrl(baseUrl, method, params) {
@@ -96,6 +98,39 @@ cityInput.addEventListener('input', async (ev) => {
     }
 })
 
+function makeUiData(location, current, sunTimes, metricFlag) {
+    const common = {
+        localtime: location['localtime'],
+        condition_text: current['condition']['text'],
+        condition_icon: current['condition']['icon'],
+        wind_angle: current['wind_degree'], // Used to draw angle arrow.
+        sunrise: sunTimes['sunrise'],
+        sunset: sunTimes['sunset']
+    }
+
+    if (metricFlag) {
+        const metric = {
+            temp: `${current['temp_c']} °C`,
+            temp_feel: `${current['feelslike_c']} °C`,
+            wind_speed: `${current['wind_kph']} kph`,
+            precip: `${current['precip_mm']} mm`
+        }
+        return {...common, ...metric}
+    }
+
+    const us = {
+        temp: `${current['temp_f']} °F`,
+        temp_feel: `${current['feelslike_f']} °F`,
+        wind_speed: `${current['wind_mph']} mph`,
+        precip: `${current['precip_in']} in`
+    }
+    return {...common, ...us}
+}
+
+function setUi(uiData) {
+    console.log(uiData)
+}
+
 // Reload weather results UI.
 citySearchButton.addEventListener('click', async (ev) => {
     const cityQuery = cityInput.value
@@ -105,7 +140,6 @@ citySearchButton.addEventListener('click', async (ev) => {
 
         // Fetch weather json:
         const weatherJson = await fetchWeather(cityQuery)
-        weatherHolder.textContent = JSON.stringify(weatherJson)
 
         // Show city name:
         const location = weatherJson['location']
@@ -120,7 +154,15 @@ citySearchButton.addEventListener('click', async (ev) => {
         const tz_id = location['tz_id']
 
         const sunJson = await fetchSun(lat, lon, tz_id)
-        sunHolder.textContent = JSON.stringify(sunJson)
+        const sunTimes = sunJson['results']
+        
+        const current = weatherJson['current']
+
+        // Data that is displayed in the UI:
+        const uiData = makeUiData(location, current, sunTimes, metricFlag)
+
+        // Set UI values to those in uiData:
+        setUi(uiData)
     } else {
         cityInput.style.border = "2px dotted red"
     }

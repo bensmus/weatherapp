@@ -13,19 +13,17 @@ section {
     font-size: 30px;
 }
 
-.minor-header {
-    font-size: 22px;
-    font-style: italic;
-}
-
-#city-search {
-    max-width: fit-content;
-}
-
-#city-results {
-    max-width: 70%;
+#searchbar {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
 }
 
 #city-input {
-    min-width: 500px;
+    max-width: 500px;
+    flex-grow: 1;
+}
+
+section {
+    max-width: 70%;
 }
