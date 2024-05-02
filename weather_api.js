@@ -4,26 +4,33 @@
 // Fetching JSON data from an API endpoint in JavaScript in web browser.
 
 /*
-Free plan: 
+Free plan of weatherapi: 
 - Forecast: 3 days with daily and hourly intervals.
 - Historical: last 7 days are shown.
 */
 
 /* E.g. Current weather in Paris, using convention of REST API query string parameters:
-$ wget "$baseURL$apiMethod?q=$q&key=$key"
+$ curl "$baseURL$apiMethod?q=$q&key=$key"
 {"location":{"name":"Paris","region":"Ile-de-France","country":"France","lat":48.87,"lon":2.33,"tz_id":"Europe/Paris","localtime_epoch":1714331246,"localtime":"2024-04-28 21:07"},"current":{"last_updated_epoch":1714330800,"last_updated":"2024-04-28 21:00","temp_c":11.0,"temp_f":51.8,"is_day":0,"condition":{"text":"Light rain","icon":"//cdn.weatherapi.com/weather/64x64/night/296.png","code":1183},"wind_mph":5.6,"wind_kph":9.0,"wind_degree":260,"wind_dir":"W","pressure_mb":1015.0,"pressure_in":29.97,"precip_mm":0.0,"precip_in":0.0,"humidity":82,"cloud":0,"feelslike_c":8.8,"feelslike_f":47.8,"vis_km":10.0,"vis_miles":6.0,"uv":1.0,"gust_mph":17.3,"gust_kph":27.8}}
 // Also, you can search it up in a modern web browser and it will display JSON.
 */
 
+// Elements that form the skeleton of the page:
+const cityInput = document.getElementById('city-input') // Search for cities.
+const cityList = document.getElementById('cities') // Dropdown for city search.
+const citySearchButton = document.getElementById('city-search-button') // Submit city search.
+const metricButton = document.getElementById('metric-button') // Use metric units.
+const usButton = document.getElementById('us-button') // Use US units.
 const cityResults = document.getElementById('city-results')
-const citySearchButton = document.getElementById('city-search-button')
-const cityInput = document.getElementById('city-input')
-const cityResultsHeader = document.getElementById('city-results-header')
-const weatherHolder = document.getElementById('weather-json')
-const sunHolder = document.getElementById('sun-json')
-const cityList = document.getElementById('cities')
-const metricButton = document.getElementById('metric-button')
-const usButton = document.getElementById('us-button')
+
+// Elements whose contents change on a per-city basis:
+const cityName = document.getElementById('city-name')
+const cityTime = document.getElementById('city-time')
+const conditionIcon = document.getElementById('condition-icon')
+const conditionText = document.getElementById('condition-text')
+const cityTemp = document.getElementById('city-tempreal')
+const cityFeelslike = document.getElementById('city-tempfeel')
+const statRow = document.getElementById('stat-row')
 
 const weatherapi = {
     baseUrl: 'api.weatherapi.com/v1',
@@ -40,6 +47,7 @@ let metricFlag = true; // Metric or US?
 cityInput.value = "" // Everything assumes this is true.
 metricButton.disabled = true
 
+// General function for constructing URLs for API endpoints.
 function makeApiUrl(baseUrl, method, params) {
     // Construct the base URL with the API method
     let apiUrl = `http://${baseUrl}/${method}?`
@@ -56,7 +64,23 @@ function makeApiUrl(baseUrl, method, params) {
     return apiUrl
 }
 
-// Fetch cities matching q.
+// Convert the timestamp returned by weatherapi into something 
+// more user readable.
+function convertTimestamp(isoTimestamp) {
+    const date = new Date(isoTimestamp)
+    const options = {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+    }
+    const locale = 'en-US'
+    return new Intl.DateTimeFormat(locale, options).format(date)
+}
+
+// Fetch cities matching query.
 async function fetchSearch(q) {
     const searchUrl = makeApiUrl(weatherapi.baseUrl, 'search.json', {q: q, key: weatherapi.key})
     const response = await fetch(searchUrl);
@@ -70,7 +94,7 @@ async function fetchSearch(q) {
     return cities
 }
 
-// Fetch weather for city that matches q.
+// Fetch weather for city that matches query.
 async function fetchWeather(q) {
     const currentWeatherUrl = makeApiUrl(weatherapi.baseUrl, 'current.json', {q: q, key: weatherapi.key});
     const response = await fetch(currentWeatherUrl);
@@ -78,6 +102,7 @@ async function fetchWeather(q) {
     return json
 }
 
+// Fetch sunset and sunrise information for given location.
 async function fetchSun(lat, lon, tz_id) {
     // Parameter names are slightly different for sunapi. Sunapi requires no api key.
     const sunUrl = makeApiUrl(sunapi.baseUrl, 'json', {lat: lat, lng: lon, tzid: tz_id})
@@ -102,12 +127,18 @@ cityInput.addEventListener('input', async (ev) => {
 })
 
 // Combine data from weatherapi and sunapi into one object.
-function combineUiData(location, current, sunTimes, metricFlag) {
+function combineCurrentWeather(location, current, sunTimes, metricFlag) {
+    const cityName = location['name']
+    const cityRegion = location['region']
+    const cityCountry = location['country']
+    const name = `${cityName}, ${cityRegion}, ${cityCountry}`
+    
     const common = {
-        localtime: location['localtime'],
+        name: name,
+        time: convertTimestamp(location['localtime']),
         condition_text: current['condition']['text'],
         condition_icon: current['condition']['icon'],
-        wind_angle: current['wind_degree'], // Used to draw angle arrow.
+        wind_angle: `${current['wind_degree']}°`, // Used to draw angle arrow.
         sunrise: sunTimes['sunrise'],
         sunset: sunTimes['sunset']
     }
@@ -131,8 +162,22 @@ function combineUiData(location, current, sunTimes, metricFlag) {
     return {...common, ...us}
 }
 
-function setUi(uiData) {
-    console.log(uiData)
+// Set current weather HTML elements.
+function setCurrentWeather(currentWeather) {
+    console.log(currentWeather)
+    cityName.innerText = currentWeather.name
+    cityTime.innerText = currentWeather.time
+    conditionIcon.src = `http:${currentWeather.condition_icon}`
+    conditionText.innerText = currentWeather.condition_text
+    cityTemp.innerText = `Temperature: ${currentWeather.temp}`
+    cityFeelslike.innerText = `Feels like: ${currentWeather.temp_feel}`
+    statRow.innerHTML = `
+        <td>${currentWeather.wind_speed}</td>
+        <td>${currentWeather.wind_angle}</td>
+        <td>${currentWeather.precip}</td>
+        <td>${currentWeather.sunrise}</td>
+        <td>${currentWeather.sunset}</td>
+    `
 }
 
 // Reload weather results UI.
@@ -147,10 +192,6 @@ async function reloadWeather() {
 
         // Show city name:
         const location = weatherJson['location']
-        const cityName = location['name']
-        const cityRegion = location['region']
-        const cityCountry = location['country']
-        cityResultsHeader.innerText = `City Results: ${cityName}, ${cityRegion}, ${cityCountry}`
 
         // Get lat, lon, tz_id for sunapi:
         const lat = location['lat']
@@ -163,10 +204,10 @@ async function reloadWeather() {
         const current = weatherJson['current']
 
         // Data that is displayed in the UI:
-        const uiData = combineUiData(location, current, sunTimes, metricFlag)
+        const currentWeather = combineCurrentWeather(location, current, sunTimes, metricFlag)
 
         // Set UI values to those in uiData:
-        setUi(uiData)
+        setCurrentWeather(currentWeather)
     } else {
         cityInput.style.border = "2px dotted red"
     }

@@ -19,10 +19,41 @@
 
     </section>
     <section id="city-results" class="major-section" hidden>
-        <header id="city-results-header" class="major-header">City results loading...</header>
         <div id="unit-selection-bar">
             <button id="metric-button">°C</button>
             <button id="us-button">°F</button>
+        </div>
+        <div id="current-weather-ui">
+            <header id="city-name" class="major-header"></header>
+            <header id="city-time" class="major-header"></header>
+            <section id="city-icon-and-temp">
+                <div id="condition">
+                    <img id="condition-icon" alt="weather icon">
+                    <div id="condition-text"></div>
+                </div>
+                <div id="city-temp">
+                    <div id="city-tempreal"></div>
+                    <div id="city-tempfeel"></div>
+                </div>
+            </section>
+            <section id="city-stats">
+                <table id="city-stats-table">
+                    <tr>
+                        <th>Wind speed</th>
+                        <th>Wind angle</th>
+                        <th>Precipitation</th>
+                        <th>Sunrise</th>
+                        <th>Sunset</th>
+                    </tr>
+                    <tr id="stat-row">
+                        <td> - </td>
+                        <td> - </td>
+                        <td> - </td>
+                        <td> - </td>
+                        <td> - </td>
+                    </tr>
+                </table>
+            </section>
         </div>
     </section>
 </body>
