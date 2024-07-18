@@ -50,7 +50,7 @@ metricButton.disabled = true
 // General function for constructing URLs for API endpoints.
 function makeApiUrl(baseUrl, method, params) {
     // Construct the base URL with the API method
-    let apiUrl = `http://${baseUrl}/${method}?`
+    let apiUrl = `https://${baseUrl}/${method}?`
   
     let param_i = 0;
     for (const param in params) {
